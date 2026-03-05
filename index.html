@@ -4,23 +4,185 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flow — Focus Timer</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Comfortaa:wght@300;400;600;700&family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.75em' font-size='60'%3E🫧%3C/text%3E%3Ctext x='55' y='.55em' font-size='45'%3E⋆%3C/text%3E%3Ctext x='60' y='1em' font-size='35'%3E˚%3C/text%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Comfortaa:wght@300;400;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- Ocean layers -->
+  <!-- ── Ocean bg layers ── -->
   <div id="bg-layer"></div>
   <div id="ocean-overlay"></div>
   <div class="bubbles" id="bubbles"></div>
   <div id="caustics"></div>
 
-  <!-- Clock -->
-  <div id="clock-display"></div>
+  <!-- ── Settings panel (slides in from left) ── -->
+  <div id="settings-panel">
+    <div id="panel-header">
+      <span id="panel-logo">🫧 flow</span>
+      <button id="panel-close" title="close">✕</button>
+    </div>
 
-  <!-- ═══════════════════════════════════
-       PERSISTENT LEVEL HUD
-  ════════════════════════════════════ -->
+    <div class="panel-section">
+      <div class="panel-label">focus duration</div>
+      <div class="dur-grid">
+        <button class="dur-btn" data-min="5">5<span>min</span></button>
+        <button class="dur-btn selected" data-min="15">15<span>min</span></button>
+        <button class="dur-btn" data-min="25">25<span>min</span></button>
+        <button class="dur-btn" data-min="45">45<span>min</span></button>
+        <button class="dur-btn" data-min="60">60<span>min</span></button>
+        <button class="dur-btn" data-min="90">90<span>min</span></button>
+        <button class="dur-btn" data-min="120">2<span>hr</span></button>
+        <button class="dur-btn" data-min="custom">+<span>custom</span></button>
+      </div>
+      <div class="custom-row" id="custom-row" style="display:none;">
+        <label>mins:</label>
+        <input type="number" id="custom-input" min="1" max="480" value="30" />
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">break duration</div>
+      <div class="dur-grid break-grid">
+        <button class="brk-btn selected" data-brk="5">5<span>min</span></button>
+        <button class="brk-btn" data-brk="10">10<span>min</span></button>
+        <button class="brk-btn" data-brk="15">15<span>min</span></button>
+        <button class="brk-btn" data-brk="custom">+<span>custom</span></button>
+      </div>
+      <div class="custom-row" id="break-custom-row" style="display:none;">
+        <label>mins:</label>
+        <input type="number" id="break-custom-input" min="1" max="60" value="10" />
+      </div>
+      <label class="no-break-toggle">
+        <input type="checkbox" id="no-break-check" />
+        <span>no break</span>
+      </label>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">task</div>
+      <input type="text" class="panel-text-input" id="task-input"
+             placeholder="what are you working on?" maxlength="40" />
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">background <span class="panel-label-note">(optional)</span></div>
+      <div class="upload-area">
+        <input type="file" id="bg-file" accept="image/*,.gif,.avif,.webp" />
+        <span class="upload-icon">🌊</span>
+        <span class="upload-text">image or gif</span>
+        <span class="upload-name" id="file-name"></span>
+      </div>
+    </div>
+
+    <button class="panel-start-btn" id="start-btn">begin session ✦</button>
+  </div>
+
+  <!-- Panel backdrop -->
+  <div id="panel-backdrop"></div>
+
+  <!-- ── Level-up overlay ── -->
+  <div id="levelup-overlay">
+    <div id="levelup-card">
+      <div id="levelup-badge-big"></div>
+      <div id="levelup-title">level up!</div>
+      <div id="levelup-new-rank"></div>
+      <div id="levelup-lvl-num"></div>
+      <button id="levelup-close">continue ✦</button>
+    </div>
+  </div>
+
+  <!-- ── Break prompt overlay ── -->
+  <div id="break-prompt-overlay">
+    <div id="break-prompt-card">
+      <div id="break-prompt-icon">🫧</div>
+      <div id="break-prompt-title">focus complete!</div>
+      <div id="break-prompt-sub">take a breather?</div>
+      <div id="break-prompt-duration"><span id="break-prompt-mins"></span> min break ready</div>
+      <div id="break-prompt-btns">
+        <button class="ctrl-btn" id="skip-break-btn">skip →</button>
+        <button class="ctrl-btn primary" id="start-break-btn">start break 🌊</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Notification ── -->
+  <div class="notif" id="notif"></div>
+
+  <!-- ════════════════════════════════════
+       MAIN STAGE — always visible
+  ═════════════════════════════════════ -->
+  <main id="stage">
+
+    <!-- Top bar -->
+    <header id="top-bar">
+      <button id="settings-toggle" title="settings">
+        <span class="burger">☰</span>
+        <span id="top-task-name"></span>
+      </button>
+      <div id="top-clock"></div>
+    </header>
+
+    <!-- Center timer -->
+    <section id="timer-stage">
+
+      <!-- Mode pill: FOCUS / BREAK -->
+      <div id="mode-pill">
+        <span id="mode-pill-text">focus</span>
+      </div>
+
+      <!-- Ring timer -->
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 300 300">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#1a6a9a"/>
+              <stop offset="40%"  stop-color="#3ecfcf"/>
+              <stop offset="80%"  stop-color="#7ee8e8"/>
+              <stop offset="100%" stop-color="#ffffff"/>
+            </linearGradient>
+            <linearGradient id="breakRingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#1a7a5a"/>
+              <stop offset="50%"  stop-color="#3ecfaf"/>
+              <stop offset="100%" stop-color="#a8f0d6"/>
+            </linearGradient>
+          </defs>
+          <g id="tick-group"></g>
+          <circle class="ring-outer"    cx="150" cy="150" r="148"/>
+          <circle class="ring-track"    cx="150" cy="150" r="130"/>
+          <circle class="ring-bg"       cx="150" cy="150" r="130"/>
+          <circle class="ring-progress" cx="150" cy="150" r="130" id="ring-progress"/>
+        </svg>
+        <div class="timer-center">
+          <div id="big-timer">00:00</div>
+          <div class="timer-label-small" id="timer-mode-label">ready</div>
+        </div>
+      </div>
+
+      <!-- Session chips -->
+      <div id="chips-row">
+        <div id="chips"></div>
+        <span id="chips-label"></span>
+      </div>
+
+      <!-- Controls -->
+      <div id="timer-controls">
+        <button class="ctrl-btn ghost" id="reset-btn" title="reset">↺</button>
+        <button class="ctrl-btn big-play" id="pause-btn">▶ start</button>
+        <button class="ctrl-btn ghost" id="back-btn" title="end session">✕</button>
+      </div>
+
+      <!-- Status -->
+      <div id="status-row">
+        <div class="status-dot" id="status-dot"></div>
+        <div class="status-text" id="status-text">ready</div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ── Level HUD ── -->
   <div id="level-hud">
     <div id="hud-left">
       <span id="hud-badge">🐚</span>
@@ -33,177 +195,7 @@
       <div id="hud-xp-label">
         <span id="hud-xp-current">0</span> / <span id="hud-xp-next">60</span> xp
       </div>
-      <div id="hud-xp-track">
-        <div id="hud-xp-fill"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════
-       LEVEL-UP OVERLAY
-  ════════════════════════════════════ -->
-  <div id="levelup-overlay">
-    <div id="levelup-card">
-      <div id="levelup-badge-big"></div>
-      <div id="levelup-title">level up!</div>
-      <div id="levelup-new-rank"></div>
-      <div id="levelup-lvl-num"></div>
-      <button id="levelup-close">continue ✦</button>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════
-       BREAK PROMPT OVERLAY
-       (shown after focus session ends)
-  ════════════════════════════════════ -->
-  <div id="break-prompt-overlay">
-    <div id="break-prompt-card">
-      <div id="break-prompt-icon">🫧</div>
-      <div id="break-prompt-title">focus complete!</div>
-      <div id="break-prompt-sub">take a breather?</div>
-      <div id="break-prompt-duration">
-        <span id="break-prompt-mins"></span> min break ready
-      </div>
-      <div id="break-prompt-btns">
-        <button class="ctrl-btn" id="skip-break-btn">skip →</button>
-        <button class="ctrl-btn primary" id="start-break-btn">start break 🌊</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Notification -->
-  <div class="notif" id="notif"></div>
-
-  <!-- ═══════════════════════════════════
-       SETUP SCREEN
-  ════════════════════════════════════ -->
-  <div class="screen active" id="setup-screen">
-
-    <div class="logo-wrap">
-      <div class="logo">flow</div>
-      <div class="tagline">~ ocean focus timer ~</div>
-    </div>
-
-    <div class="glass-card">
-      <div class="section-label">⟡ focus duration</div>
-      <div class="duration-grid">
-        <button class="dur-btn" data-min="5">5<span>min</span></button>
-        <button class="dur-btn selected" data-min="15">15<span>min</span></button>
-        <button class="dur-btn" data-min="25">25<span>min</span></button>
-        <button class="dur-btn" data-min="45">45<span>min</span></button>
-        <button class="dur-btn" data-min="60">60<span>min</span></button>
-        <button class="dur-btn" data-min="90">90<span>min</span></button>
-        <button class="dur-btn" data-min="120">2<span>hr</span></button>
-        <button class="dur-btn" data-min="custom">+<span>custom</span></button>
-      </div>
-
-      <div class="custom-row" id="custom-row" style="display:none;">
-        <label>Custom mins:</label>
-        <input type="number" id="custom-input" min="1" max="480" value="30" />
-      </div>
-
-      <!-- Break duration -->
-      <div class="section-label">⟡ break duration</div>
-      <div class="break-row">
-        <div class="break-presets">
-          <button class="break-btn selected" data-brk="5">5<span>min</span></button>
-          <button class="break-btn" data-brk="10">10<span>min</span></button>
-          <button class="break-btn" data-brk="15">15<span>min</span></button>
-          <button class="break-btn" data-brk="custom">+<span>custom</span></button>
-        </div>
-        <div class="custom-row" id="break-custom-row" style="display:none;">
-          <label>Custom mins:</label>
-          <input type="number" id="break-custom-input" min="1" max="60" value="10" />
-        </div>
-        <label class="no-break-toggle">
-          <input type="checkbox" id="no-break-check" />
-          <span>no break</span>
-        </label>
-      </div>
-
-      <div class="section-label">⟡ what are you working on?</div>
-      <input type="text" class="input-field" id="task-input"
-             placeholder="studying, writing, creating..." maxlength="40" />
-
-      <div class="section-label">⟡ background (optional)</div>
-      <div class="upload-area" id="upload-area">
-        <input type="file" id="bg-file" accept="image/*,.gif,.avif,.webp" />
-        <span class="upload-icon">🌊</span>
-        <span class="upload-text">drop an image or gif here</span>
-        <span class="upload-name" id="file-name"></span>
-      </div>
-
-      <button class="start-btn" id="start-btn">begin session ✦</button>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════
-       FOCUS SCREEN
-  ════════════════════════════════════ -->
-  <div class="screen" id="focus-screen">
-
-    <div class="session-label" id="focus-label">deep work session</div>
-
-    <div class="ring-container">
-      <svg class="ring-svg" viewBox="0 0 300 300">
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stop-color="#1a6a9a"/>
-            <stop offset="40%"  stop-color="#3ecfcf"/>
-            <stop offset="80%"  stop-color="#7ee8e8"/>
-            <stop offset="100%" stop-color="#ffffff"/>
-          </linearGradient>
-          <linearGradient id="breakRingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stop-color="#2a9b6a"/>
-            <stop offset="50%"  stop-color="#3ecfaf"/>
-            <stop offset="100%" stop-color="#a8f0d6"/>
-          </linearGradient>
-        </defs>
-        <g id="tick-group"></g>
-        <circle class="ring-outer"    cx="150" cy="150" r="148"/>
-        <circle class="ring-track"    cx="150" cy="150" r="130"/>
-        <circle class="ring-bg"       cx="150" cy="150" r="130"/>
-        <circle class="ring-progress" cx="150" cy="150" r="130" id="ring-progress"/>
-      </svg>
-      <div class="timer-center">
-        <div class="timer-display" id="timer-display">15:00</div>
-        <div class="timer-label-small" id="timer-mode-label">remaining</div>
-      </div>
-    </div>
-
-    <div class="wave-bar-wrap">
-      <div class="wave-bar-fill" id="progress-bar"></div>
-    </div>
-
-    <!-- Session counter chips -->
-    <div id="session-chips-row">
-      <div id="session-chips" title="completed sessions this run"></div>
-      <span id="session-chips-label">sessions</span>
-    </div>
-
-    <div class="controls">
-      <button class="ctrl-btn" id="reset-btn">↺ reset</button>
-      <button class="ctrl-btn primary" id="pause-btn">⏸ pause</button>
-      <button class="ctrl-btn" id="back-btn">← back</button>
-    </div>
-
-    <div class="status-row">
-      <div class="status-dot" id="status-dot"></div>
-      <div class="status-text" id="status-text">in flow</div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════
-       DONE SCREEN
-  ════════════════════════════════════ -->
-  <div class="screen" id="done-screen">
-    <div class="done-big">✦ done ✦</div>
-    <div class="done-sub">session complete</div>
-    <div class="done-stats" id="done-stats">you focused for 25 minutes</div>
-    <div id="done-xp-badge">+<span id="done-xp-amount">0</span> xp earned</div>
-    <div class="controls" style="margin-top:1rem;">
-      <button class="ctrl-btn" id="new-btn">new session</button>
-      <button class="ctrl-btn primary" id="repeat-btn">repeat ↺</button>
+      <div id="hud-xp-track"><div id="hud-xp-fill"></div></div>
     </div>
   </div>
 
