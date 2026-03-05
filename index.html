@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow — Focus Timer</title>
+  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48dGV4dCB5PScuOWVtJyBmb250LXNpemU9JzkwJz7wn6unPC90ZXh0Pjwvc3ZnPg==">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Comfortaa:wght@300;400;600;700&family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Ocean layers -->
+  <div id="bg-layer"></div>
+  <div id="ocean-overlay"></div>
+  <div class="bubbles" id="bubbles"></div>
+  <div id="caustics"></div>
+
+  <!-- Clock -->
+  <div id="clock-display"></div>
+
+  <!-- ═══════════════════════════════════
+       PERSISTENT LEVEL HUD
+  ════════════════════════════════════ -->
+  <div id="level-hud">
+    <div id="hud-left">
+      <span id="hud-badge">🐚</span>
+      <div id="hud-info">
+        <div id="hud-title">tide caller</div>
+        <div id="hud-level-label">LVL <span id="hud-level-num">1</span></div>
+      </div>
+    </div>
+    <div id="hud-right">
+      <div id="hud-xp-label">
+        <span id="hud-xp-current">0</span> / <span id="hud-xp-next">60</span> xp
+      </div>
+      <div id="hud-xp-track">
+        <div id="hud-xp-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       LEVEL-UP OVERLAY
+  ════════════════════════════════════ -->
+  <div id="levelup-overlay">
+    <div id="levelup-card">
+      <div id="levelup-badge-big"></div>
+      <div id="levelup-title">level up!</div>
+      <div id="levelup-new-rank"></div>
+      <div id="levelup-lvl-num"></div>
+      <button id="levelup-close">continue ✦</button>
+    </div>
+  </div>
+
+  <!-- Notification -->
+  <div class="notif" id="notif"></div>
+
+  <!-- ═══════════════════════════════════
+       SETUP SCREEN
+  ════════════════════════════════════ -->
+  <div class="screen active" id="setup-screen">
+
+    <div class="logo-wrap">
+      <div class="logo">flow</div>
+      <div class="tagline">~ ocean focus timer ~</div>
+    </div>
+
+    <div class="glass-card">
+      <div class="section-label">⟡ session duration</div>
+      <div class="duration-grid">
+        <button class="dur-btn" data-min="5">5<span>min</span></button>
+        <button class="dur-btn selected" data-min="15">15<span>min</span></button>
+        <button class="dur-btn" data-min="25">25<span>min</span></button>
+        <button class="dur-btn" data-min="45">45<span>min</span></button>
+        <button class="dur-btn" data-min="60">60<span>min</span></button>
+        <button class="dur-btn" data-min="90">90<span>min</span></button>
+        <button class="dur-btn" data-min="120">2<span>hr</span></button>
+        <button class="dur-btn" data-min="custom">+<span>custom</span></button>
+      </div>
+
+      <div class="custom-row" id="custom-row" style="display:none;">
+        <label>Custom mins:</label>
+        <input type="number" id="custom-input" min="1" max="480" value="30" />
+      </div>
+
+      <div class="section-label">⟡ what are you working on?</div>
+      <input type="text" class="input-field" id="task-input"
+             placeholder="studying, writing, creating..." maxlength="40" />
+
+      <div class="section-label">⟡ background (optional)</div>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="bg-file" accept="image/*,.gif,.avif,.webp" />
+        <span class="upload-icon">🌊</span>
+        <span class="upload-text">drop an image or gif here</span>
+        <span class="upload-name" id="file-name"></span>
+      </div>
+
+      <button class="start-btn" id="start-btn">begin session ✦</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       FOCUS SCREEN
+  ════════════════════════════════════ -->
+  <div class="screen" id="focus-screen">
+
+    <div class="session-label" id="focus-label">deep work session</div>
+
+    <div class="ring-container">
+      <svg class="ring-svg" viewBox="0 0 300 300">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#1a6a9a"/>
+            <stop offset="40%"  stop-color="#3ecfcf"/>
+            <stop offset="80%"  stop-color="#7ee8e8"/>
+            <stop offset="100%" stop-color="#ffffff"/>
+          </linearGradient>
+        </defs>
+        <g id="tick-group"></g>
+        <circle class="ring-outer"    cx="150" cy="150" r="148"/>
+        <circle class="ring-track"    cx="150" cy="150" r="130"/>
+        <circle class="ring-bg"       cx="150" cy="150" r="130"/>
+        <circle class="ring-progress" cx="150" cy="150" r="130" id="ring-progress"/>
+      </svg>
+      <div class="timer-center">
+        <div class="timer-display" id="timer-display">15:00</div>
+        <div class="timer-label-small">remaining</div>
+      </div>
+    </div>
+
+    <div class="wave-bar-wrap">
+      <div class="wave-bar-fill" id="progress-bar"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="reset-btn">↺ reset</button>
+      <button class="ctrl-btn primary" id="pause-btn">⏸ pause</button>
+      <button class="ctrl-btn" id="back-btn">← back</button>
+    </div>
+
+    <div class="status-row">
+      <div class="status-dot" id="status-dot"></div>
+      <div class="status-text" id="status-text">in flow</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       DONE SCREEN
+  ════════════════════════════════════ -->
+  <div class="screen" id="done-screen">
+    <div class="done-big">✦ done ✦</div>
+    <div class="done-sub">session complete</div>
+    <div class="done-stats" id="done-stats">you focused for 25 minutes</div>
+    <div id="done-xp-badge">+<span id="done-xp-amount">0</span> xp earned</div>
+    <div class="controls" style="margin-top:1rem;">
+      <button class="ctrl-btn" id="new-btn">new session</button>
+      <button class="ctrl-btn primary" id="repeat-btn">repeat ↺</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
