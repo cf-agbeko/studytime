@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flow — Focus Timer</title>
-  <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDAgMTAwJz48dGV4dCB5PScuOWVtJyBmb250LXNpemU9JzkwJz7wn6unPC90ZXh0Pjwvc3ZnPg==">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Comfortaa:wght@300;400;600;700&family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -53,6 +52,25 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════
+       BREAK PROMPT OVERLAY
+       (shown after focus session ends)
+  ════════════════════════════════════ -->
+  <div id="break-prompt-overlay">
+    <div id="break-prompt-card">
+      <div id="break-prompt-icon">🫧</div>
+      <div id="break-prompt-title">focus complete!</div>
+      <div id="break-prompt-sub">take a breather?</div>
+      <div id="break-prompt-duration">
+        <span id="break-prompt-mins"></span> min break ready
+      </div>
+      <div id="break-prompt-btns">
+        <button class="ctrl-btn" id="skip-break-btn">skip →</button>
+        <button class="ctrl-btn primary" id="start-break-btn">start break 🌊</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification -->
   <div class="notif" id="notif"></div>
 
@@ -67,7 +85,7 @@
     </div>
 
     <div class="glass-card">
-      <div class="section-label">⟡ session duration</div>
+      <div class="section-label">⟡ focus duration</div>
       <div class="duration-grid">
         <button class="dur-btn" data-min="5">5<span>min</span></button>
         <button class="dur-btn selected" data-min="15">15<span>min</span></button>
@@ -82,6 +100,25 @@
       <div class="custom-row" id="custom-row" style="display:none;">
         <label>Custom mins:</label>
         <input type="number" id="custom-input" min="1" max="480" value="30" />
+      </div>
+
+      <!-- Break duration -->
+      <div class="section-label">⟡ break duration</div>
+      <div class="break-row">
+        <div class="break-presets">
+          <button class="break-btn selected" data-brk="5">5<span>min</span></button>
+          <button class="break-btn" data-brk="10">10<span>min</span></button>
+          <button class="break-btn" data-brk="15">15<span>min</span></button>
+          <button class="break-btn" data-brk="custom">+<span>custom</span></button>
+        </div>
+        <div class="custom-row" id="break-custom-row" style="display:none;">
+          <label>Custom mins:</label>
+          <input type="number" id="break-custom-input" min="1" max="60" value="10" />
+        </div>
+        <label class="no-break-toggle">
+          <input type="checkbox" id="no-break-check" />
+          <span>no break</span>
+        </label>
       </div>
 
       <div class="section-label">⟡ what are you working on?</div>
@@ -116,6 +153,11 @@
             <stop offset="80%"  stop-color="#7ee8e8"/>
             <stop offset="100%" stop-color="#ffffff"/>
           </linearGradient>
+          <linearGradient id="breakRingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%"   stop-color="#2a9b6a"/>
+            <stop offset="50%"  stop-color="#3ecfaf"/>
+            <stop offset="100%" stop-color="#a8f0d6"/>
+          </linearGradient>
         </defs>
         <g id="tick-group"></g>
         <circle class="ring-outer"    cx="150" cy="150" r="148"/>
@@ -125,12 +167,18 @@
       </svg>
       <div class="timer-center">
         <div class="timer-display" id="timer-display">15:00</div>
-        <div class="timer-label-small">remaining</div>
+        <div class="timer-label-small" id="timer-mode-label">remaining</div>
       </div>
     </div>
 
     <div class="wave-bar-wrap">
       <div class="wave-bar-fill" id="progress-bar"></div>
+    </div>
+
+    <!-- Session counter chips -->
+    <div id="session-chips-row">
+      <div id="session-chips" title="completed sessions this run"></div>
+      <span id="session-chips-label">sessions</span>
     </div>
 
     <div class="controls">
