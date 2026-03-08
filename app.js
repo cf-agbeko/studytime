@@ -544,6 +544,145 @@ document.getElementById('back-btn').addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════
+// PICTURE-IN-PICTURE
+// ═══════════════════════════════════════════
+
+const pipCanvas = document.getElementById('pip-canvas');
+const pipVideo  = document.getElementById('pip-video');
+const pipBtn    = document.getElementById('pip-btn');
+const pipCtx    = pipCanvas.getContext('2d');
+let   pipActive = false;
+let   pipFrame  = null;
+
+function drawPiPFrame() {
+  const W = pipCanvas.width, H = pipCanvas.height;
+  const cx = W / 2, cy = H / 2;
+  const r  = 155;
+
+  pipCtx.clearRect(0, 0, W, H);
+
+  // Background
+  const bgGrad = pipCtx.createRadialGradient(cx, cy - 40, 20, cx, cy, W * 0.7);
+  bgGrad.addColorStop(0, '#1a5f8a');
+  bgGrad.addColorStop(1, '#0d2f52');
+  pipCtx.fillStyle = bgGrad;
+  pipCtx.fillRect(0, 0, W, H);
+
+  // Track ring
+  pipCtx.beginPath();
+  pipCtx.arc(cx, cy, r, 0, 2 * Math.PI);
+  pipCtx.strokeStyle = 'rgba(168,230,240,0.12)';
+  pipCtx.lineWidth   = 18;
+  pipCtx.stroke();
+
+  // Progress arc
+  const total = totalSeconds || 1;
+  const frac  = hasStarted ? (remainingSeconds / total) : 1;
+  const start = -Math.PI / 2;
+  const end   = start + 2 * Math.PI * frac;
+
+  const arcGrad = pipCtx.createLinearGradient(cx - r, cy, cx + r, cy);
+  if (isBreak) {
+    arcGrad.addColorStop(0,   '#1a7a5a');
+    arcGrad.addColorStop(0.5, '#3ecfaf');
+    arcGrad.addColorStop(1,   '#a8f0d6');
+  } else {
+    arcGrad.addColorStop(0,   '#1a6a9a');
+    arcGrad.addColorStop(0.4, '#3ecfcf');
+    arcGrad.addColorStop(1,   '#ffffff');
+  }
+
+  pipCtx.beginPath();
+  pipCtx.arc(cx, cy, r, start, end);
+  pipCtx.strokeStyle = arcGrad;
+  pipCtx.lineWidth   = 10;
+  pipCtx.lineCap     = 'round';
+  pipCtx.shadowColor = isBreak ? 'rgba(62,207,175,0.8)' : 'rgba(126,232,232,0.8)';
+  pipCtx.shadowBlur  = 14;
+  pipCtx.stroke();
+  pipCtx.shadowBlur  = 0;
+
+  // Timer text
+  pipCtx.font         = 'bold 72px sans-serif';
+  pipCtx.fillStyle    = '#ffffff';
+  pipCtx.textAlign    = 'center';
+  pipCtx.textBaseline = 'middle';
+  pipCtx.shadowColor  = isBreak ? 'rgba(62,207,175,0.7)' : 'rgba(126,232,232,0.7)';
+  pipCtx.shadowBlur   = 18;
+  pipCtx.fillText(bigTimer.textContent, cx, cy - 10);
+  pipCtx.shadowBlur   = 0;
+
+  // Mode label
+  const modeStr = isBreak ? 'BREAK' : (isPaused ? 'PAUSED' : (hasStarted ? 'FOCUS' : 'READY'));
+  pipCtx.font      = '600 18px sans-serif';
+  pipCtx.fillStyle = isBreak ? 'rgba(168,240,214,0.7)' : 'rgba(168,230,240,0.6)';
+  pipCtx.fillText(modeStr, cx, cy + 50);
+
+  // Task name
+  const task = document.getElementById('task-input').value.trim();
+  if (task) {
+    pipCtx.font      = '500 14px sans-serif';
+    pipCtx.fillStyle = 'rgba(255,255,255,0.35)';
+    pipCtx.fillText(task.toLowerCase(), cx, cy + 76);
+  }
+
+  if (pipActive) pipFrame = requestAnimationFrame(drawPiPFrame);
+}
+
+async function startPiP() {
+  if (!document.pictureInPictureEnabled) {
+    showNotif('PiP not supported in this browser');
+    return;
+  }
+
+  try {
+    // Draw a frame onto canvas first so the stream has content
+    drawPiPFrame();
+
+    // Capture canvas as a video stream
+    const stream = pipCanvas.captureStream(15);
+
+    // Wire stream to video element
+    pipVideo.srcObject = stream;
+
+    // Must play before PiP
+    await pipVideo.play();
+
+    // Request PiP
+    await pipVideo.requestPictureInPicture();
+
+    pipActive = true;
+    showNotif('timer popped out ⧉');
+
+    // Keep drawing frames
+    pipFrame = requestAnimationFrame(drawPiPFrame);
+
+  } catch(err) {
+    console.error('PiP error:', err);
+    showNotif('could not open popout: ' + err.message);
+  }
+}
+
+async function stopPiP() {
+  pipActive = false;
+  cancelAnimationFrame(pipFrame);
+  if (document.pictureInPictureElement) {
+    await document.exitPictureInPicture().catch(() => {});
+  }
+  pipVideo.srcObject = null;
+}
+
+pipBtn.addEventListener('click', () => {
+  if (pipActive) stopPiP();
+  else           startPiP();
+});
+
+document.addEventListener('leavepictureinpicture', () => {
+  pipActive = false;
+  cancelAnimationFrame(pipFrame);
+});
+
+// ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
 refreshXP();

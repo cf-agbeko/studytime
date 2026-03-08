@@ -170,6 +170,7 @@
         <button class="ctrl-btn ghost" id="reset-btn" title="reset">↺</button>
         <button class="ctrl-btn big-play" id="pause-btn">▶ start</button>
         <button class="ctrl-btn ghost" id="back-btn" title="end session">✕</button>
+        <button class="ctrl-btn ghost" id="pip-btn" title="pop out timer">⧉</button>
       </div>
 
       <!-- Status -->
@@ -198,6 +199,10 @@
       <div id="hud-xp-track"><div id="hud-xp-fill"></div></div>
     </div>
   </div>
+
+  <!-- Hidden PiP canvas -->
+  <canvas id="pip-canvas" width="400" height="400" style="display:none"></canvas>
+  <video  id="pip-video"  width="400" height="400" style="display:none" muted playsinline autoplay></video>
 
   <script src="app.js"></script>
 </body>
