@@ -374,6 +374,7 @@ function startTick() {
     }
     bigTimer.textContent = formatTime(remainingSeconds);
     updateRing(remainingSeconds, totalSeconds);
+    updateTabTitle();
   }, 1000);
 }
 
@@ -409,6 +410,8 @@ function beginFocus() {
   updateRing(remainingSeconds, totalSeconds);
 
   startTick();
+  requestNotifPermission();
+  updateTabTitle();
 }
 
 // ─── Focus ends ───────────────────────────────
@@ -425,6 +428,9 @@ function endFocus() {
     statusDot.className    = 'status-dot';
     statusText.textContent = 'done ✦';
     bgLayer.classList.remove('active');
+    document.title = PAGE_TITLE;
+    playChime(false);
+    sendNotification('🫧 focus complete!', `+${result.gained} xp earned${taskName ? ' · ' + taskName : ''}`);
     setTimeout(() => {
       showNotif(`session done! +${result.gained} xp 🌊`);
       if (result.leveled) setTimeout(() => showLevelUp(result.newInfo), 1200);
@@ -437,6 +443,8 @@ function endFocus() {
   // Show break prompt
   document.getElementById('break-prompt-mins').textContent = selectedBreakMin;
   document.getElementById('break-prompt-overlay').classList.add('show');
+  playChime(false);
+  sendNotification('🫧 focus complete!', `Take a ${selectedBreakMin} min break · +${result.gained} xp`);
   showNotif(`focus done! +${result.gained} xp 🌊`);
   window._lastXpResult = result;
 }
@@ -478,12 +486,15 @@ function beginBreak() {
   updateRing(remainingSeconds, totalSeconds);
 
   startTick();
+  updateTabTitle();
 }
 
 // ─── Break ends — auto-start next focus ───────
 function endBreak() {
   isBreak = false;
   setBreakVisuals(false);
+  playChime(true);
+  sendNotification('🌊 break over!', 'Time to get back in the flow.');
   showNotif('break over — back to flow 🌊');
   beginFocus();
 }
@@ -541,6 +552,7 @@ document.getElementById('back-btn').addEventListener('click', () => {
   statusText.textContent = 'ready';
   topTask.textContent    = '';
   pauseBtn.textContent   = '▶ start';
+  document.title = PAGE_TITLE;
 });
 
 // ═══════════════════════════════════════════
@@ -681,6 +693,85 @@ document.addEventListener('leavepictureinpicture', () => {
   pipActive = false;
   cancelAnimationFrame(pipFrame);
 });
+
+// ═══════════════════════════════════════════
+// TAB TITLE
+// ═══════════════════════════════════════════
+
+const PAGE_TITLE = 'Flow — Focus Timer';
+
+function updateTabTitle() {
+  if (!hasStarted) {
+    document.title = PAGE_TITLE;
+    return;
+  }
+  const time   = formatTime(remainingSeconds);
+  const prefix = isBreak ? '🌊' : '🫧';
+  const label  = isBreak ? 'break' : 'focus';
+  document.title = `${prefix} ${time} · ${label}`;
+}
+
+// ═══════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+
+function sendNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const n = new Notification(title, {
+    body,
+    icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.75em' font-size='60'%3E🫧%3C/text%3E%3C/svg%3E",
+    silent: true,   // we handle our own sound
+  });
+  setTimeout(() => n.close(), 6000);
+}
+
+// ═══════════════════════════════════════════
+// AUDIO CHIME  (Web Audio API — no file needed)
+// ═══════════════════════════════════════════
+
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playChime(isBreakEnd = false) {
+  try {
+    const ctx  = getAudioCtx();
+    // Ocean-themed chord: two gentle sine tones fading out
+    const notes = isBreakEnd
+      ? [523.25, 659.25, 783.99]   // C5 E5 G5  — warm "back to work" major
+      : [783.99, 987.77, 1174.66]; // G5 B5 D6  — airy "done!" sparkle
+
+    notes.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type      = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      const start = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.18, start + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 1.4);
+
+      osc.start(start);
+      osc.stop(start + 1.5);
+    });
+  } catch (e) {
+    console.warn('Audio chime failed:', e);
+  }
+}
 
 // ═══════════════════════════════════════════
 // INIT
