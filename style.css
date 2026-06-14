@@ -503,3 +503,22 @@ body.break-mode #big-timer { animation: timerGlowBreak 3s ease-in-out infinite; 
 #break-prompt-sub{font-family:'Quicksand',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.2em;color:var(--break-light);text-transform:uppercase;opacity:0.85;}
 #break-prompt-duration{font-family:'Comfortaa',sans-serif;font-size:0.95rem;font-weight:700;color:rgba(255,255,255,0.55);background:rgba(62,207,175,0.12);border:1px solid rgba(168,240,214,0.18);border-radius:18px;padding:0.28rem 0.9rem;}
 #break-prompt-btns{display:flex;gap:0.7rem;margin-top:0.2rem;}
+/* ─── Manual session adj buttons ─── */
+.session-adj-btn {
+  background: rgba(168,230,240,0.08);
+  border: 1px solid rgba(168,230,240,0.2);
+  color: rgba(168,230,240,0.7);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  flex-shrink: 0;
+}
+.session-adj-btn:hover {
+  background: rgba(168,230,240,0.18);
+  border-color: rgba(168,230,240,0.5);
+  color: #fff;
+}

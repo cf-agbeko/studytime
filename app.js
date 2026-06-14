@@ -336,19 +336,74 @@ function setBreakVisuals(on) {
   }
 }
 
+// ─── Session persistence ──────────────────────
+function loadSessionCount() {
+  try { return parseInt(localStorage.getItem('flow_session_count')) || 0; } catch(e) { return 0; }
+}
+function saveSessionCount(n) {
+  try { localStorage.setItem('flow_session_count', n); } catch(e) {}
+}
+
+function renderChips(count) {
+  const container = document.getElementById('chips');
+  const label     = document.getElementById('chips-label');
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const chip = document.createElement('div');
+    chip.className = 'session-chip';
+    container.appendChild(chip);
+  }
+  if (count === 0) {
+    label.textContent = '';
+  } else {
+    label.textContent = count === 1 ? '1 session' : `${count} sessions`;
+  }
+}
+
 function addChip() {
-  const chip = document.createElement('div');
-  chip.className = 'session-chip';
-  document.getElementById('chips').appendChild(chip);
-  const label = document.getElementById('chips-label');
-  const count = document.querySelectorAll('.session-chip').length;
-  label.textContent = count === 1 ? '1 session' : `${count} sessions`;
+  sessionCount++;
+  saveSessionCount(sessionCount);
+  renderChips(sessionCount);
 }
 
 function clearChips() {
-  document.getElementById('chips').innerHTML = '';
-  document.getElementById('chips-label').textContent = '';
+  sessionCount = 0;
+  saveSessionCount(0);
+  renderChips(0);
 }
+
+// ─── Manual session controls ──────────────────
+(function initSessionControls() {
+  const row = document.getElementById('chips-row');
+
+  const btnMinus = document.createElement('button');
+  btnMinus.className   = 'session-adj-btn';
+  btnMinus.textContent = '−';
+  btnMinus.title       = 'remove a session';
+
+  const btnPlus = document.createElement('button');
+  btnPlus.className   = 'session-adj-btn';
+  btnPlus.textContent = '+';
+  btnPlus.title       = 'add a session manually';
+
+  row.appendChild(btnMinus);
+  row.appendChild(btnPlus);
+
+  btnPlus.addEventListener('click', () => {
+    sessionCount++;
+    saveSessionCount(sessionCount);
+    renderChips(sessionCount);
+    showNotif('session added ✦');
+  });
+
+  btnMinus.addEventListener('click', () => {
+    if (sessionCount <= 0) return;
+    sessionCount--;
+    saveSessionCount(sessionCount);
+    renderChips(sessionCount);
+    showNotif('session removed');
+  });
+})();
 
 // ─── Pause button text helper ─────────────────
 function setPauseBtn(running) {
@@ -779,3 +834,7 @@ function playChime(isBreakEnd = false) {
 refreshXP();
 bigTimer.textContent = formatTime(selectedMinutes * 60);
 updateRing(selectedMinutes * 60, selectedMinutes * 60);
+
+// Restore saved sessions from previous visit
+sessionCount = loadSessionCount();
+renderChips(sessionCount);
